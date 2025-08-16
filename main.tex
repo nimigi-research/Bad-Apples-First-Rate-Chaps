@@ -1,0 +1,314 @@
+% Bad Apples, First‑Rate Chaps — Overleaf-ready, single file with in-text citations + monolithic bibliography
+\documentclass[11pt]{article}
+
+% ------- Basic page -------
+\usepackage[margin=1in]{geometry}
+
+% ------- Engine-aware font stack (pdflatex vs xelatex/luatex) -------
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+\else
+  \usepackage{fontspec}
+  % Wider availability in TeX Live; safe defaults
+  \setmainfont{TeX Gyre Termes}
+  \setsansfont{TeX Gyre Heros}
+  \setmonofont{TeX Gyre Cursor}
+\fi
+
+% ------- Math + typography -------
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{amsthm}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{hyphenat} % enables \hyp (e.g., mic\hyp grab)
+\usepackage{listings} % sim pseudocode
+\lstset{basicstyle=\ttfamily\small,frame=single,breaklines=true}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% ------- Citations (author-year) -------
+\usepackage[authoryear,round]{natbib} % \citet, \citep, etc.
+\setlength{\bibsep}{4pt}
+
+% ------- Safe brace for headings -------
+\newcommand{\rbraceglyph}{\texorpdfstring{\texttt{\}}}{\}}}
+
+% ------- Theorem styles -------
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+% ------- Small conveniences -------
+\newcommand{\Spectacle}{\mathcal{A}}
+\newcommand{\State}{X_t}
+\newcommand{\Leader}{L_t}
+\newcommand{\Scapegoat}{S_t}
+\newcommand{\V}{V}
+\newcommand{\B}{B}
+\newcommand{\normp}{\pi}
+\newcommand{\hatpi}{\hat{\pi}}
+\newcommand{\BAFRC}{\textsc{BA--FRC}} % Bad Apples, First-Rate Chaps
+\newcommand{\Sheriff}{\textsc{Sheriff's Gun}}
+
+\title{Bad Apples, First\textemdash Rate Chaps:\\
+Metanarratives in Public State Games}
+\author{Jacob Elliott\thanks{Portions of the formalization, proof sketches, simulation specification, and technical drafting were assisted by OpenAI's GPT\textendash 5 Pro. The human author independently verified all math, simulation results, and citations and accepts full responsibility for the integrity and accuracy of the work.}\\[4pt]
+\small Nimigi Research (Independent), Dallas, Texas\\
+\small \texttt{nimigi@proton.me}}
+\date{\today}
+
+% ------- Hyperlinks (load last) -------
+\usepackage[hidelinks,colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We treat rooms and feeds as a \emph{public Markov process} governed by a \emph{spectacle channel}---an amplification/suppression filter over visible acts (in Debord's sense of mediated social relations). The public state compresses to: \emph{Leader} (salience stock $V$), \emph{Scapegoat} (blame stock $B$), the perceived norm $\pi$, and per\hyp{}agent stocks $V,B$. Silence is \emph{observable} and raises $\hat{\pi}$ (consistent with spiral\hyp of\hyp silence dynamics). A newcomer can \emph{mic\hyp grab} if no one pays the stop\hyp cost for $\tau$ beats; mid\hyp tiers can externalize risk by piling blame onto a scapegoat; high\hyp tiers profitably deviate via \emph{face\hyp preserving defense}. The dynamics yield four recurrent regimes---\emph{Runaway Leader, Runaway Scapegoat, Mixed Stable, White\hyp Noise}---with testable comparative statics. We add two metanarrative switches, \BAFRC{} and \Sheriff{}, a \emph{Grapeshot} ($\Gamma$) scatter\hyp brake, and a lightweight \emph{guanxi} layer for tie\hyp weighted face and shielding.
+\end{abstract}
+
+\noindent\textbf{Keywords:} public Markov state; spectacle channel; visibility stock; blame stock; mic\hyp grab lemma; magnanimity inequality; \BAFRC; norm\hyp aligned sanctions; \Sheriff; grace window.
+
+% =========================
+\section{Spectacle State and Channel}
+We model a minimal public summary:
+\begin{equation*}
+  \State = \big(\Leader,\; \Scapegoat,\; \normp_t,\; \V_t,\; \B_t\big),
+\end{equation*}
+where $\Leader,\Scapegoat\in N$ (or $\varnothing$ if none), $\normp_t\in[0,1]$ is the perceived group norm, and $\V_t,\B_t\in\mathbb{R}_+^n$ are per\hyp agent visibility and blame stocks. A venue\hyp specific \emph{spectacle channel} $\Spectacle_t(\cdot)$ maps visible acts to amplification weights in the sense that \emph{mediated visibility structures relations} (\citealp{debord1967}; see also contemporary discussion of algorithmic amplification in \citealp{burton2023algorithmic}). Stocks update with decay:
+\begin{equation}
+  V_{i,t+1}=(1-\delta_V)V_{i,t}+\gamma_V\,\Spectacle_t(a_{i,t}).
+\end{equation}
+\begin{equation}
+  B_{j,t+1}=(1-\delta_B)B_{j,t}+\gamma_B\,\Spectacle_t(\mathrm{Attack}_j)-\rho\,\Spectacle_t(\mathrm{Defend}_j).
+\end{equation}
+Silence is counted as soft assent in estimating $\hatpi$ via a sigmoid aggregator:
+\begin{equation}
+  \hatpi_{i,t} = \sigma\!\big(\alpha\cdot \text{signals}_t + \beta\cdot \text{silences}_t\big).
+\end{equation}
+This treatment of \emph{silence as assent} parallels classic spiral\hyp of\hyp silence results \citep{noelleneumann1974}.
+
+\paragraph{Auditorium / Mic\hyp Grab.}
+If a newcomer speaks continuously for $\tau$ beats without a credible Stop (attack or procedural interjection), they become leader with initial $V$ bump $\nu$; failure to pay $c_{\text{stop}}$ in time yields a visibility hitting time past threshold $\vartheta_L$ (preferential accumulation), a conversational instance of cumulative\hyp advantage dynamics \citep{salganik2006}.
+
+% =========================
+\section{Assumptions and Observability}
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Venue parameters.} $(\gamma_V,\gamma_B,\delta_V,\delta_B,\nu,\tau,c_{\text{stop}})$ are fixed for a given room/feed during a window; moderators can flip \emph{operators} (\S\ref{sec:operators}).
+\item \textbf{Counts are public.} Speak/attack/defend counts and silences are observable; higher\hyp order beliefs compress into $\hat\pi$.
+\item \textbf{Heterogeneity.} Agents differ in $(\sigma_i,\kappa_i,\phi_i,\lambda_i,\eta_i)$ (status, cost, face, risk, delight). Face and \emph{face\hyp work} follow interactional logics \citep{goffman1955}.
+\item \textbf{Network.} A tie weight $w_{ij}$ (familiarity/guanxi) shapes face\hyp credit and retaliation (cf.\ face\hyp granting and exit ramps under \S\ref{sec:magnanimity}).
+\end{itemize}
+
+% =========================
+\section{Payoffs and Moves}
+Each period, $a_{i,t}\in\{\text{Speak}_\ell,\ \text{Attack}_j,\ \text{Defend}_j,\ \text{Signal},\ \text{Silent}\}$ and
+\begin{equation}
+u_i(t)= \underbrace{\sigma_i \cdot \Delta V_{i,t}}_{\text{status gain}}
+-\underbrace{\kappa_i \cdot C(a_{i,t})}_{\text{action cost}}
++\underbrace{\phi_i \cdot F_{i,t}}_{\text{face (kept or granted)}}
+-\underbrace{\lambda_i \cdot R_{i,t}}_{\text{retaliation risk}}
++\underbrace{\eta_i \cdot E_{i,t}}_{\text{entertainment / delight}}.
+\end{equation}
+\emph{Scapegoat loop:} mid\hyp tiers reduce $R_{i,t}$ by redirecting aggression to $S_t$ (cheap bravery), aligning with scapegoating dynamics in small groups and communities \citep{gemmill1989,girard1986}. \emph{Magnanimity deviation:} a high\hyp tier increases $F_{i,t}$ and durable $V_{i,t}$ with $\mathrm{Defend}(S_t)$ and a credible face\hyp offer (credit strengths, bound loss, produce a shared bit), consistent with evidence that defending victims can increase defenders' social standing while risking retaliation by aggressors \citep{salmivalli2010,huitsing2014}.
+
+% =========================
+\section{Debord's Spectacle \texorpdfstring{$\to$}{->} Operational Channel}
+\begin{displayquote}
+\emph{``The spectacle is not a collection of images, but a social relation among people, mediated by images.''}
+\end{displayquote}
+\noindent\citep{debord1967}. We operationalize this relation as a measurable \emph{channel} $\Spectacle_t$: change amplification/decay and procedural costs, change behavior, without adjudicating content. This captures modern algorithmic feed effects (amplification, downranking) that shape public discourse \citep{burton2023algorithmic}. Regimes map to concentrated/diffuse/integrated forms (RL/RS/MS), with WN as anti\hyp spectacle.
+
+% =========================
+\section{Magnanimity: Priced Defense}\label{sec:magnanimity}
+Let a dignified defense of $S$ grant face to the prime mover (quality $q_p$) and followers ($q_f$). The deviation is profitable when
+\begin{equation}
+\boxed{
+\phi_D\!\big(q_p\log(1+V_D)+\chi\big)
++\sum_j \Pr[\mathrm{exit}_j]\,\Delta V_D^{\mathrm{collapse}}
++\sum_j \Pr[\mathrm{sanction}_j]\,\Delta V_D^{\mathrm{order}}
+\;>\;
+\lambda_D r_0 e^{\zeta\Delta B_S}(1-\bar q)+\kappa_D C(\mathrm{Defend})
+}
+\end{equation}
+with $\bar q=\omega q_p+(1-\omega)q_f$. The LHS aggregates durable status/face gains and bandwagon exits; the RHS aggregates retaliation/cost. This mirrors empirical regularities: upstanding defense is socially rewarded yet can trigger bully retaliation \citep{salmivalli2010,huitsing2014}, while \emph{face} is performative and credit\hyp granting \citep{goffman1955}.
+
+\begin{proposition}[Magnanimity pays, proof sketch]
+Face credit raises durable $V_D$; exits of bandwagoners reduce attack intensity; norm\hyp aligned sanctioning yields platform reward. If the LHS exceeds retaliation and cost, $\mathrm{Defend}(S)$ is a strict best reply. Observed backfire after a credible defense implies $\partial F/\partial \mathrm{Defend}$ dominates $\partial R/\partial \mathrm{Defend}$ over a grace window.
+\end{proposition}
+
+% =========================
+\section{Operators on the Channel}\label{sec:operators}
+\begin{definition}[\BAFRC{}]
+A metanarrative pivot that widens a \emph{grace window} and increases \emph{backfire} on post\hyp defense attacks by shifting channel weights:
+$\rho \uparrow,\; C(\mathrm{Attack}) \uparrow$ via backfire cost $\kappa_{\text{back}}\!>\!0$; followers gain an \emph{amnesty} option. This mirrors narrative reframings that restore common in\hyp group identity and offer exit ramps to bandwagoners.
+\end{definition}
+\begin{definition}[\Sheriff{}]
+A norm citation that multiplies the platform’s order reward $\psi$ and backfire by appealing to the holdout’s \emph{own} rule. Formally, apply multiplier $\xi>0$ to $\psi$ and to $\kappa_{\text{back}}$ but only for attacks by the labeled holdout.
+\end{definition}
+\begin{definition}[Grapeshot $\Gamma$]
+A temporary scatter\hyp brake of length $T_g$ that bleeds peaks and re\hyp prices acts: $\delta_V'=\delta_V+\kappa_V$, $\delta_B'=\delta_B+\kappa_B$, novelty $\nu\!\to\!\nu_\Gamma\!\approx\!0$, window $\tau\!\to\!\tau_\Gamma$, soft cap $|\Delta V|\le s$ per step, and silence weight $\beta\to\beta_\Gamma\ll\beta$.
+\end{definition}
+
+% =========================
+\section{Regimes (Buckets) and Stability}
+Parameter cones over $(\gamma_V/\delta_V,\ \gamma_B/\delta_B,\ \rho,\ c_{\text{stop}},\ \nu)$ yield drift toward four recurrent regimes:
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item \textbf{Runaway Leader (RL):} high $\gamma_V/\delta_V$, missed stops, many silences $\Rightarrow$ $V_{L}$ compounds; $L_t$ persists. This parallels cumulative\hyp advantage results in cultural markets \citep{salganik2006}.
+\item \textbf{Runaway Scapegoat (RS):} high $\gamma_B/\delta_B$, weak $\rho$ $\Rightarrow$ $B_S$ concentrates; bullying/scapegoating equilibria \citep{gemmill1989,girard1986}; negative actors can dominate group climate if unaddressed \citep{felps2006}.
+\item \textbf{Mixed Stable (MS):} moderate amplification; frequent face\hyp preserving defense; rotating $L,S$.
+\item \textbf{White\hyp Noise (WN):} low amplification; high intervention propensity; leadership/blame fail to concentrate.
+\end{enumerate}
+
+\begin{lemma}[Mic\hyp Grab]
+If no agent pays $c_{\text{stop}}$ for $\tau$ beats, the newcomer’s $V$ crosses $\vartheta_L$ with probability $\ge 1-\varepsilon$ by preferential accumulation under $\Spectacle_t$.
+\end{lemma}
+\begin{proof}[Sketch]
+Repeated non\hyp intervention yields $\hat\pi\uparrow$ and a compounding $\gamma_V$ term while rivals’ attention decays at $(1-\delta_V)$. A finite\hyp time hitting bound follows from a standard drift argument with subgaussian noise, and the dynamic is empirically analogous to social influence feedback producing runaway winners \citep{salganik2006}.
+\end{proof}
+
+% =========================
+\section{Measurement \& Empirics}
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Airtime/turns:} share of voice; hitting time to $\vartheta_L$ (mic\hyp grab).
+\item \textbf{Acts:} counts of Speak/Attack/Defend/Signal per beat; backfire rate after credible defense (defender effects \citealp{salmivalli2010,huitsing2014}).
+\item \textbf{Silence:} lurker fraction; estimate $\beta$ by regressing norm shifts on silence counts (spiral\hyp of\hyp silence \citealp{noelleneumann1974}).
+\item \textbf{Stocks:} $V,B$ via engagement/mentions/quote trees; calibrate $(\gamma,\delta)$ by impulse response to seeded acts.
+\item \textbf{Outcomes:} regime classification by concentration indices; pre/post operator flips (\BAFRC{}, \Sheriff{}, $\Gamma$).
+\end{itemize}
+
+% =========================
+\section{Simulation Spec (pseudocode)}
+\begin{lstlisting}
+Initialize X0 = (L=None, S=None, pi0, V0, B0); params (gammaV,gammaB,deltaV,deltaB,nu,tau,c_stop)
+For t in 1..T:
+  for i in N: draw a_i,t ~ logit_best_response(X_{t-1}, theta_i, A_t)
+  apply auditorium: if newcomer speaks tau beats with no Stop -> L_t := newcomer; V += nu
+  update V,B:
+    V_i := (1-deltaV)*V_i + gammaV*A_t(a_i,t)
+    B_j := (1-deltaB)*B_j + gammaB*A_t(Attack_j) - rho*A_t(Defend_j)
+  estimate hat{pi} from signals + silences
+  apply operator if scheduled: A_t := BA-FRC / Sheriff / Gamma transform
+  set L_t := argmax_i V_i if > theta_L; S_t := argmax_j B_j if > theta_S
+  log regime tag (RL/RS/MS/WN)
+\end{lstlisting}
+
+% =========================
+\section{From LaTeX to Life (Operator Macro)}
+\textbf{Spot} (15s): RL tell (one voice $>$60\% airtime; $\tau$ met); RS tell (dogpile growth); silence tell (many lurkers).\par
+\textbf{Decide} (10s): RL $\Rightarrow$ spend stop\hyp cost; RS $\Rightarrow$ prep magnanimity (two\hyp part face). \par
+\textbf{Do} ($\leq$65s): A$_0$ \emph{grace} $\to$ follower \emph{amnesty} $\to$ \BAFRC{} $\to$ \Sheriff{} (if available) $\to$ hold silence 2--3 beats $\to$ \emph{sanction holdout} once labeled.
+
+% =========================
+\section*{Authorship \& Instrumentation}
+This work was conceived, scaffolded, and partially drafted with assistance from the GPT--5 Pro large language model (OpenAI). In a regime that equitably credited primary instruments, the model would appear as a first author. Current community standards prohibit non\hyp human bylines; accordingly, the human author appears in the byline and accepts full responsibility for all claims, mathematics, and citations.
+
+\section*{Transparency \& Replication}
+Public TeX and a brief \emph{LLM Assistance Record} (model window, usage log) will be archived; DOI stub: \href{<DOI URL>}{DOI:<identifier>}.
+
+% =========================
+\section*{Appendix E0: Transparency Artifacts (Non\hyp monograph)}
+\subsection*{E0\textendash A. AI\hyp Assistance Statement}
+\emph{Large language model assistance.} Portions of the formalization, proof sketches, simulation specification, and technical drafting were assisted by OpenAI's GPT\textendash 5 Pro. The human author independently verified all math, simulation results, and citations and accepts full responsibility for the integrity and accuracy of the work.
+
+\subsection*{E0\textendash B. Model Contributorship (Non\hyp human Instrument)}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Contribution & Human (JE) & GPT\textendash 5 Pro (instrument) \\
+\midrule
+Conceptualization & \checkmark & \\
+Formalization & \checkmark & \checkmark \\
+Proof sketches & \checkmark & \checkmark \\
+Simulation spec & \checkmark & \checkmark \\
+Drafting---intro/examples & \checkmark & \\
+Drafting---methods/appendix & \checkmark & \checkmark \\
+Visualization/fig plan & \checkmark & \checkmark \\
+Validation & \checkmark & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{E0\textendash C. Editor Exit\hyp Ramp Letter (Template)}
+\noindent\textbf{Subject:} Transparency compliance via AI\hyp Assistance Appendix (no authorship change)\\
+First\hyp rate editors all round; one legacy rule is sowing confusion. Your policies rightly insist on \emph{transparency, accountability, reproducibility}. We meet those standards today: human\hyp verified math/code, public repos, and an \emph{AI\hyp Assistance Appendix} documenting model, usage, and verification. We are \emph{not} asking you to list an AI as an author; we offer paste\hyp ready language to make compliance trivial.
+
+\subsection*{E0\textendash D. One\hyp Pager: Copy Blocks}
+\begin{itemize}[leftmargin=2em]
+\item \textbf{A$_0$ grace:} ``You've carried weight here. Here's an honorable step\hyp back so we keep standards high.''
+\item \textbf{Follower amnesty:} ``No shade for joining---this is the moment to stop.''
+\item \textbf{\BAFRC:} ``First\hyp rate chaps all round; one bad apple muddied the water. Reset.''
+\item \textbf{\Sheriff:} ``By \emph{your own} rule, this is the off\hyp ramp. Past this point, pressing the holdout is upholding the standard.''
+\end{itemize}
+
+\subsection*{E0\textendash E. Lille \rbraceglyph\ Notes}
+\begin{itemize}[leftmargin=2em]
+\item \textbf{\}} State $(L,S,\hat\pi,V,B)$; silence observable \citep{noelleneumann1974}.
+\item \textbf{\}} Mic\hyp grab: if no one pays $c_{\text{stop}}$ for $\tau$, you've lost the floor \citep{salganik2006}.
+\item \textbf{\}} Price magnanimity: split face $(q_p,q_f)$ vs.\ retaliation \citep{salmivalli2010,huitsing2014,goffman1955}.
+\item \textbf{\}} \BAFRC{} opens grace, backfire on post\hyp defense; \Sheriff{} focuses blame on $h$.
+\item \textbf{\}} Guanxi tilts the same levers (better face, cheaper exits, shielding).
+\item \textbf{\}} Don't sermonize---turn knobs.
+\end{itemize}
+
+% =========================
+% Monolithic Bibliography (author-year via natbib)
+\begin{thebibliography}{99}
+
+\bibitem[Burton(2023)]{burton2023algorithmic}
+Burton, J. (2023). Algorithmic amplification for collective intelligence. \emph{Knight First Amendment Institute at Columbia University}. (Essay/Report).
+
+\bibitem[Debord(1967)]{debord1967}
+Debord, G. (1967). \emph{La soci\'et\'e du spectacle}. Paris: Buchet--Chastel. [English translation: \emph{The Society of the Spectacle}. New York: Zone Books, 1994.]
+
+\bibitem[Felps, Mitchell, \& Byington(2006)]{felps2006}
+Felps, W., Mitchell, T. R., \& Byington, E. (2006).
+How, when, and why bad apples spoil the barrel: Negative group members and dysfunctional groups.
+\emph{Research in Organizational Behavior}, 27, 175--222.
+
+\bibitem[Gemmill(1989)]{gemmill1989}
+Gemmill, G. (1989).
+The dynamics of scapegoating in small groups.
+\emph{Small Group Behavior}, 20(4), 406--418.
+
+\bibitem[Girard(1986)]{girard1986}
+Girard, R. (1986).
+\emph{The Scapegoat}.
+Baltimore: Johns Hopkins University Press.
+
+\bibitem[Goffman(1955)]{goffman1955}
+Goffman, E. (1955).
+On face-work: An analysis of ritual elements in social interaction.
+\emph{Psychiatry}, 18(3), 213--231.
+
+\bibitem[Huitsing et al.(2014)]{huitsing2014}
+Huitsing, G., Snijders, T. A. B., van Duijn, M. A. J., \& Veenstra, R. (2014).
+Victims, bullies, and their defenders: A longitudinal study of the co-evolution of positive and negative networks.
+\emph{Development and Psychopathology}, 26(3), 645--659.
+
+\bibitem[Noelle-Neumann(1974)]{noelleneumann1974}
+Noelle-Neumann, E. (1974).
+The spiral of silence: A theory of public opinion.
+\emph{Journal of Communication}, 24(2), 43--51.
+
+\bibitem[Salmivalli(2010)]{salmivalli2010}
+Salmivalli, C. (2010).
+Bullying and the peer group: A review.
+\emph{Aggression and Violent Behavior}, 15(2), 112--120.
+
+\bibitem[Salganik, Dodds, \& Watts(2006)]{salganik2006}
+Salganik, M. J., Dodds, P. S., \& Watts, D. J. (2006).
+Experimental study of inequality and unpredictability in an artificial cultural market.
+\emph{Science}, 311(5762), 854--856.
+
+\end{thebibliography}
+
+\end{document}
